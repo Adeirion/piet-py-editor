@@ -3,52 +3,83 @@ import sys
 
 #python 2
 if sys.version_info.major == 2:
-	from Tkinter import Tk, BOTH, Menu, Grid, Canvas, Y, LEFT, TOP, RAISED,  SUNKEN, VERTICAL, HORIZONTAL, RIGHT, SCROLL, UNITS, Text, StringVar, Button
-	from ttk import Frame, Label#, Notebook, Style, Separator, PanedWindow, LabelFrame, Entry, Scrollbar
+	from Tkinter import Tk, BOTH, Menu, Grid, Canvas, Y, LEFT, TOP, RAISED,  SUNKEN, VERTICAL, HORIZONTAL, RIGHT, SCROLL, UNITS, Text, StringVar, Button, Label, Frame
+	#, Notebook, Style, Separator, PanedWindow, LabelFrame, Entry, Scrollbar
 	from tkFileDialog import asksaveasfilename, askopenfilename
 	#from tkMessageBox import askyesno
 	#from tkSimpleDialog import Dialog
 #python 3
 else:
-	from tkinter import Tk, BOTH, Menu, Grid, Canvas, Y, LEFT, TOP, RAISED, SUNKEN, VERTICAL, HORIZONTAL, RIGHT, SCROLL, UNITS, Text, StringVar, Button
-	from tkinter.ttk import Frame, Label#, Notebook, Style, Separator, PanedWindow, LabelFrame, Entry, Scrollbar
+	from tkinter import Tk, BOTH, Menu, Grid, Canvas, Y, LEFT, TOP, RAISED, SUNKEN, VERTICAL, HORIZONTAL, RIGHT, SCROLL, UNITS, Text, StringVar, Button, Label
+	from tkinter.ttk import Frame#, Notebook, Style, Separator, PanedWindow, LabelFrame, Entry, Scrollbar
 	from tkinter.filedialog  import asksaveasfilename, askopenfilename
 	#from tkinter.messagebox  import askyesno
 	#from tkinter.simpledialog import Dialog
 
+colors = {'lred' : 'light coral',
+		'red'  : 'red',
+		'dred' : 'dark red',
+		'lyellow': 'light goldenrod',
+		'yellow' : 'gold',
+		'dyellow': 'goldenrod',
+		'lgreen': 'pale green',
+		'green' : 'green2',
+		'dgreen': 'dark green',
+		'lcyan': 'pale turquoise',
+		'cyan' : 'turquoise',
+		'dcyan': 'turquoise4',
+		'lblue': 'cornflower blue',
+		'blue' : 'blue',
+		'dblue': 'navy',
+		'lmagenta': 'hot pink',
+		'magenta' : 'magenta',
+		'dmagenta': 'magenta4',
+		'white':'white',
+		'black':'black'}
+
+color_matrix = [['lred', 'red', 'dred'],
+			 ['lyellow', 'yellow', 'dyellow'],
+			 ['lgreen', 'green', 'dgreen'],
+			 ['lcyan', 'cyan', 'dcyan'],
+			 ['lblue', 'blue', 'dblue'],
+			 ['lmagenta', 'magenta', 'dmagenta']]
+
+operation_matrix = [['', 'push', 'pop'],
+				['add', 'substract', 'multiply'],
+				['divide', 'mod', 'not'],
+				['greater', 'pointer', 'switch'],
+				['duplicate', 'roll', 'in(int)'],
+				['in(char)', 'out(int)', 'out(char)']]
 
 class PietEditorFrame(Frame):
 
 	def __init__(self, parent):
 		Frame.__init__(self, parent)   
 
-		self.parent = parent
-
 		self.initUI()
 		
 	def initUI(self):
 
-		self.parent.title("Piet editor")
+		self.master.title("Piet editor")
 
 		self.pack(fill=BOTH, expand=1)
 
-		self.colorselector = Frame(self, relief=RAISED)
+		self.colorselector = ColorFrame(self)
 		self.colorselector.pack(side=LEFT, fill=Y, expand=False, padx = 5, pady = 5)
-		l = Label(self.colorselector, text="colors")
-		l.pack(padx = 5, pady = 5)
 		
-		self.canvas = Canvas(self, width = 300, height = 300, relief=SUNKEN)
+		self.canvas = Canvas(self, width = 300, height = 300)
 		self.canvas.pack(side=LEFT, fill=BOTH, expand=1, padx = 5, pady = 5)
+		self.canvas.create_rectangle(0,0,400,400, fill="white")
 
 		rightPane = Frame(self)
 		rightPane.pack(side=LEFT, fill=Y, expand=False)
 
-		self.operations = Frame(self, relief=RAISED)
+		self.operations = Frame(self, relief=RAISED, borderwidth=2)
 		self.operations.pack(side=TOP, fill=BOTH, expand=True, in_ = rightPane, padx = 5, pady = 5)
 		l2 = Label(self.operations, text="operations")
 		l2.pack(padx = 5, pady = 5)
 
-		self.runningFrame = Frame(rightPane, relief=RAISED)
+		self.runningFrame = Frame(rightPane, relief=RAISED, borderwidth=2)
 		self.runningFrame.pack(side=TOP, fill=BOTH, expand=True, in_ = rightPane, padx = 5, pady = 5)
 		l3 = Label(self.runningFrame, text="running")
 		l3.pack(padx = 5, pady = 5)
@@ -78,7 +109,7 @@ class PietEditorFrame(Frame):
 		menubar.add_cascade(label="Help", menu=helpmenu)
 
 		# display the menu
-		self.parent.config(menu=menubar)
+		self.master.config(menu=menubar)
 		
 	def onrun(self, event=None):
 		print "run"
@@ -86,8 +117,75 @@ class PietEditorFrame(Frame):
 	def hello(self):
 		print("hello")
 
+class ColorFrame(Frame):
+	
+	def __init__(self, parent):
+		Frame.__init__(self, parent, relief=RAISED, borderwidth=2, height=100)
 
+		self.parent=parent
 
+		rowsize=30
+		colsize=30
+
+		self.frontcolor="white"
+		self.backcolor="black"
+
+		self.labels=[]
+
+		for c in range(6):
+			self.columnconfigure(c, minsize=colsize)
+		
+
+		for r in range(6):
+			self.rowconfigure(2*r, minsize=rowsize)
+			for c in range(3):
+				color=color_matrix[r][c]
+				label = Label(self, background=colors[color], foreground = 'black' if c<2 else 'white', relief='solid')
+				label.grid(row=2*r, column=2*c, rowspan=2, columnspan=2, sticky='NSEW')
+				label.bind("<Button-1>", lambda event, color=color: self.newfrontcolor(color))
+				label.bind("<Button-3>", lambda event, color=color: self.newbackcolor(color))
+				self.labels.append(label)
+		
+		self.rowconfigure(12, minsize=rowsize)
+		label = Label(self, background=colors['white'], relief='solid')
+		label.grid(row=6*2, column=0, rowspan=2, columnspan=3, sticky='NSEW')
+		label.bind("<Button-1>", lambda event, color='white': self.newfrontcolor('white'))
+		label.bind("<Button-3>", lambda event, color='white': self.newbackcolor('white'))
+
+		label = Label(self, background=colors['black'], relief='solid')
+		label.grid(row=6*2, column=3, rowspan=2, columnspan=3, sticky='NSEW')
+		label.bind("<Button-1>", lambda event, color='black': self.newfrontcolor('black'))
+		label.bind("<Button-3>", lambda event, color='black': self.newbackcolor('black'))
+
+		self.rowconfigure(14, minsize=rowsize)
+		self.rowconfigure(15, minsize=4*rowsize)
+		self.rowconfigure(16, minsize=rowsize)
+		self.backcolorlabel = Label(self, background=colors['black'], relief='sunken')
+		self.backcolorlabel.grid(row=14, column=0, rowspan=2, columnspan=5, sticky='NSEW', padx=10, pady=10)
+
+		self.frontcolorlabel = Label(self, background=colors['white'], relief='raised')
+		self.frontcolorlabel.grid(row=15, column=1, rowspan=2, columnspan=5, sticky='NSEW', padx=10, pady=10)
+
+	def newfrontcolor(self, color):
+		self.frontcolor=color
+		self.frontcolorlabel.config(background=colors[color])
+		
+		for r in range(6):
+			for c in range(3):
+				if color_matrix[r][c]==color:
+					print color
+					for l in range(18):
+						self.labels[(l+r*3+c-(3 if l%3>2-c else 0))%18].config(text=operation_matrix[l/3][l%3])
+					return
+
+	def newbackcolor(self, color):
+		self.backcolor=color
+		self.backcolorlabel.config(background=colors[color])
+
+	def getfrontcolor(self):
+		return self.frontcolor
+	def getbackcolor(self):
+		return self.backcolor
 	
 def main():
 
