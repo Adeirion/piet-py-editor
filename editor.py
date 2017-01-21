@@ -67,21 +67,12 @@ class PietEditorFrame(Frame):
 		self.colorselector = ColorFrame(self)
 		self.colorselector.pack(side=LEFT, fill=Y, expand=False, padx = 5, pady = 5)
 		
-		self.canvas = Canvas(self, width = 300, height = 300)
-		self.canvas.pack(side=LEFT, fill=BOTH, expand=1, padx = 5, pady = 5)
-		self.canvas.create_rectangle(0,0,400,400, fill="white")
+		self.canvasframe = CanvasFrame(self)
+		self.canvasframe.pack(side=LEFT, fill=BOTH, expand=1, padx = 5, pady = 5)
 
-		rightPane = Frame(self)
-		rightPane.pack(side=LEFT, fill=Y, expand=False)
-
-		self.operations = Frame(self, relief=RAISED, borderwidth=2)
-		self.operations.pack(side=TOP, fill=BOTH, expand=True, in_ = rightPane, padx = 5, pady = 5)
-		l2 = Label(self.operations, text="operations")
-		l2.pack(padx = 5, pady = 5)
-
-		self.runningFrame = Frame(rightPane, relief=RAISED, borderwidth=2)
-		self.runningFrame.pack(side=TOP, fill=BOTH, expand=True, in_ = rightPane, padx = 5, pady = 5)
-		l3 = Label(self.runningFrame, text="running")
+		self.executionFrame = Frame(self, relief=RAISED, borderwidth=2)
+		self.executionFrame.pack(side=LEFT, fill=BOTH, expand=False, padx = 5, pady = 5)
+		l3 = Label(self.executionFrame, text="running")
 		l3.pack(padx = 5, pady = 5)
 		
 
@@ -120,7 +111,7 @@ class PietEditorFrame(Frame):
 class ColorFrame(Frame):
 	
 	def __init__(self, parent):
-		Frame.__init__(self, parent, relief=RAISED, borderwidth=2, height=100)
+		Frame.__init__(self, parent, relief=RAISED, borderwidth=2)
 
 		self.parent=parent
 
@@ -140,20 +131,22 @@ class ColorFrame(Frame):
 			self.rowconfigure(2*r, minsize=rowsize)
 			for c in range(3):
 				color=color_matrix[r][c]
-				label = Label(self, background=colors[color], foreground = 'black' if c<2 else 'white', relief='solid')
-				label.grid(row=2*r, column=2*c, rowspan=2, columnspan=2, sticky='NSEW')
+				label = Label(self, background=colors[color], borderwidth=1, relief='solid', text=operation_matrix[r][c], font=("TkDefaultFont",10))
+				label.grid(row=2*r, column=2*c, rowspan=2, columnspan=2, sticky='NSEW', padx=1, pady=1)
 				label.bind("<Button-1>", lambda event, color=color: self.newfrontcolor(color))
 				label.bind("<Button-3>", lambda event, color=color: self.newbackcolor(color))
 				self.labels.append(label)
+		for i in [1,2,5,8,11,13,14,16,17]:
+			self.labels[i].config(foreground = 'black' if c<2 else 'white')
 		
 		self.rowconfigure(12, minsize=rowsize)
-		label = Label(self, background=colors['white'], relief='solid')
-		label.grid(row=6*2, column=0, rowspan=2, columnspan=3, sticky='NSEW')
+		label = Label(self, background=colors['white'], borderwidth=1, relief='solid')
+		label.grid(row=6*2, column=0, rowspan=2, columnspan=3, sticky='NSEW', padx=1, pady=1)
 		label.bind("<Button-1>", lambda event, color='white': self.newfrontcolor('white'))
 		label.bind("<Button-3>", lambda event, color='white': self.newbackcolor('white'))
 
-		label = Label(self, background=colors['black'], relief='solid')
-		label.grid(row=6*2, column=3, rowspan=2, columnspan=3, sticky='NSEW')
+		label = Label(self, background=colors['black'], borderwidth=1, relief='solid')
+		label.grid(row=6*2, column=3, rowspan=2, columnspan=3, sticky='NSEW', padx=1, pady=1)
 		label.bind("<Button-1>", lambda event, color='black': self.newfrontcolor('black'))
 		label.bind("<Button-3>", lambda event, color='black': self.newbackcolor('black'))
 
@@ -186,7 +179,24 @@ class ColorFrame(Frame):
 		return self.frontcolor
 	def getbackcolor(self):
 		return self.backcolor
+		
+class CanvasFrame(Frame):
+
+	def __init__(self, parent):
+		Frame.__init__(self, parent)
+
+		self.parent=parent
+		
+		self.codel_size=10
+		self.image_height = 30
+		self.image_width = 30
 	
+		self.canvas = Canvas(self, background='white')
+		self.canvas.pack(side=LEFT, fill=BOTH, expand=1, padx = 5, pady = 5)
+		
+		for i in range(self.image_height):
+			self.canvas.create_line(0, i*self.codel_size, self.image_height*self.codel_size, i*self.codel_size)
+
 def main():
 
 	root = Tk()
