@@ -3,14 +3,14 @@ import sys
 
 #python 2
 if sys.version_info.major == 2:
-	from Tkinter import Tk, BOTH, Menu, Grid, Canvas, Y, LEFT, TOP, RAISED,  SUNKEN, VERTICAL, HORIZONTAL, RIGHT, SCROLL, UNITS, Text, StringVar, Button, Label, Frame
-	#, Notebook, Style, Separator, PanedWindow, LabelFrame, Entry, Scrollbar
+	from Tkinter import Tk, BOTH, Menu, Grid, Canvas, X, Y, LEFT, TOP, RAISED,  SUNKEN, VERTICAL, HORIZONTAL, RIGHT, BOTTOM, SCROLL, UNITS, Text, StringVar, Button, Label, Frame, Scrollbar
+	#, Notebook, Style, Separator, PanedWindow, LabelFrame, Entry
 	from tkFileDialog import asksaveasfilename, askopenfilename
 	#from tkMessageBox import askyesno
 	#from tkSimpleDialog import Dialog
 #python 3
 else:
-	from tkinter import Tk, BOTH, Menu, Grid, Canvas, Y, LEFT, TOP, RAISED, SUNKEN, VERTICAL, HORIZONTAL, RIGHT, SCROLL, UNITS, Text, StringVar, Button, Label
+	from tkinter import Tk, BOTH, Menu, Grid, Canvas, X, Y, LEFT, TOP, RAISED, SUNKEN, VERTICAL, HORIZONTAL, RIGHT, BOTTOM, SCROLL, UNITS, Text, StringVar, Button, Label, Frame, Scrollbar
 	from tkinter.ttk import Frame#, Notebook, Style, Separator, PanedWindow, LabelFrame, Entry, Scrollbar
 	from tkinter.filedialog  import asksaveasfilename, askopenfilename
 	#from tkinter.messagebox  import askyesno
@@ -68,7 +68,7 @@ class PietEditorFrame(Frame):
 		self.colorselector.pack(side=LEFT, fill=Y, expand=False, padx = 5, pady = 5)
 		
 		self.canvasframe = CanvasFrame(self)
-		self.canvasframe.pack(side=LEFT, fill=BOTH, expand=1, padx = 5, pady = 5)
+		self.canvasframe.pack(side=LEFT, fill=BOTH, expand=1, pady = 5)
 
 		self.executionFrame = Frame(self, relief=RAISED, borderwidth=2)
 		self.executionFrame.pack(side=LEFT, fill=BOTH, expand=False, padx = 5, pady = 5)
@@ -187,15 +187,28 @@ class CanvasFrame(Frame):
 
 		self.parent=parent
 		
-		self.codel_size=10
+		self.codel_size=20
 		self.image_height = 30
 		self.image_width = 30
 	
-		self.canvas = Canvas(self, background='white')
-		self.canvas.pack(side=LEFT, fill=BOTH, expand=1, padx = 5, pady = 5)
+		self.canvas = Canvas(self, relief=SUNKEN, borderwidth=1, background="grey", scrollregion=(0,0,500,500))
 		
+		hbar=Scrollbar(self, orient=HORIZONTAL)
+		hbar.pack(side=BOTTOM,fill=X)
+		hbar.config(command=self.canvas.xview)
+		vbar=Scrollbar(self,orient=VERTICAL)
+		vbar.pack(side=RIGHT,fill=Y)
+		vbar.config(command=self.canvas.yview)
+		self.canvas.config(width=300,height=300)
+		self.canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
+		self.canvas.pack(side=LEFT, fill=BOTH, expand=1)
+
+		self.canvas.create_rectangle(0, 0, self.image_height*self.codel_size, self.image_width*self.codel_size, fill="white")
 		for i in range(self.image_height):
-			self.canvas.create_line(0, i*self.codel_size, self.image_height*self.codel_size, i*self.codel_size)
+			#self.canvas.create_line(0, i*self.codel_size, self.image_height*self.codel_size, i*self.codel_size)
+			for j in range(self.image_width):
+				self.canvas.create_rectangle(j*self.codel_size,i*self.codel_size, (j+1)*self.codel_size, (i+1)*self.codel_size)
+
 
 def main():
 
