@@ -1,5 +1,6 @@
 import sys
 
+from interpreter import Program
 
 #python 2
 if sys.version_info.major == 2:
@@ -16,7 +17,7 @@ else:
 	#from tkinter.messagebox  import askyesno
 	#from tkinter.simpledialog import Dialog
 
-colors = {'lred' : 'light coral',
+color_names = {'lred' : 'light coral',
 		'red'  : 'red',
 		'dred' : 'dark red',
 		'lyellow': 'light goldenrod',
@@ -104,6 +105,9 @@ class PietEditorFrame(Frame):
 		
 	def onrun(self, event=None):
 		print "run"
+	
+	def getfrontcolor(self):
+		return self.colorselector.getfrontcolor()
 
 	def hello(self):
 		print("hello")
@@ -131,7 +135,7 @@ class ColorFrame(Frame):
 			self.rowconfigure(2*r, minsize=rowsize)
 			for c in range(3):
 				color=color_matrix[r][c]
-				label = Label(self, background=colors[color], borderwidth=1, relief='solid', text=operation_matrix[r][c], font=("TkDefaultFont",10))
+				label = Label(self, background=color_names[color], borderwidth=1, relief='solid', text=operation_matrix[r][c], font=("TkDefaultFont",10))
 				label.grid(row=2*r, column=2*c, rowspan=2, columnspan=2, sticky='NSEW', padx=1, pady=1)
 				label.bind("<Button-1>", lambda event, color=color: self.newfrontcolor(color))
 				label.bind("<Button-3>", lambda event, color=color: self.newbackcolor(color))
@@ -140,12 +144,12 @@ class ColorFrame(Frame):
 			self.labels[i].config(foreground = 'black' if c<2 else 'white')
 		
 		self.rowconfigure(12, minsize=rowsize)
-		label = Label(self, background=colors['white'], borderwidth=1, relief='solid')
+		label = Label(self, background=color_names['white'], borderwidth=1, relief='solid')
 		label.grid(row=6*2, column=0, rowspan=2, columnspan=3, sticky='NSEW', padx=1, pady=1)
 		label.bind("<Button-1>", lambda event, color='white': self.newfrontcolor('white'))
 		label.bind("<Button-3>", lambda event, color='white': self.newbackcolor('white'))
 
-		label = Label(self, background=colors['black'], borderwidth=1, relief='solid')
+		label = Label(self, background=color_names['black'], borderwidth=1, relief='solid')
 		label.grid(row=6*2, column=3, rowspan=2, columnspan=3, sticky='NSEW', padx=1, pady=1)
 		label.bind("<Button-1>", lambda event, color='black': self.newfrontcolor('black'))
 		label.bind("<Button-3>", lambda event, color='black': self.newbackcolor('black'))
@@ -153,15 +157,15 @@ class ColorFrame(Frame):
 		self.rowconfigure(14, minsize=rowsize)
 		self.rowconfigure(15, minsize=4*rowsize)
 		self.rowconfigure(16, minsize=rowsize)
-		self.backcolorlabel = Label(self, background=colors['black'], relief='sunken')
+		self.backcolorlabel = Label(self, background=color_names['black'], relief='sunken')
 		self.backcolorlabel.grid(row=14, column=0, rowspan=2, columnspan=5, sticky='NSEW', padx=10, pady=10)
 
-		self.frontcolorlabel = Label(self, background=colors['white'], relief='raised')
+		self.frontcolorlabel = Label(self, background=color_names['white'], relief='raised')
 		self.frontcolorlabel.grid(row=15, column=1, rowspan=2, columnspan=5, sticky='NSEW', padx=10, pady=10)
 
 	def newfrontcolor(self, color):
 		self.frontcolor=color
-		self.frontcolorlabel.config(background=colors[color])
+		self.frontcolorlabel.config(background=color_names[color])
 		
 		for r in range(6):
 			for c in range(3):
@@ -173,7 +177,7 @@ class ColorFrame(Frame):
 
 	def newbackcolor(self, color):
 		self.backcolor=color
-		self.backcolorlabel.config(background=colors[color])
+		self.backcolorlabel.config(background=color_names[color])
 
 	def getfrontcolor(self):
 		return self.frontcolor
@@ -188,8 +192,7 @@ class CanvasFrame(Frame):
 		self.parent=parent
 		
 		self.codel_size=20
-		self.image_height = 30
-		self.image_width = 30
+		self.program = Program(30,30)
 	
 		self.canvas = Canvas(self, relief=SUNKEN, borderwidth=1, background="grey", scrollregion=(0,0,500,500))
 		
@@ -203,11 +206,38 @@ class CanvasFrame(Frame):
 		self.canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
 		self.canvas.pack(side=LEFT, fill=BOTH, expand=1)
 
-		self.canvas.create_rectangle(0, 0, self.image_height*self.codel_size, self.image_width*self.codel_size, fill="white")
-		for i in range(self.image_height):
+		for i in range(self.program.height):
 			#self.canvas.create_line(0, i*self.codel_size, self.image_height*self.codel_size, i*self.codel_size)
-			for j in range(self.image_width):
-				self.canvas.create_rectangle(j*self.codel_size,i*self.codel_size, (j+1)*self.codel_size, (i+1)*self.codel_size)
+			for j in range(self.program.width):
+				self.canvas.create_rectangle(j*self.codel_size,i*self.codel_size, (j+1)*self.codel_size, (i+1)*self.codel_size, fill='white')
+
+		self.canvas.tag_bind('all', '<Button-1>', self.onclick)
+
+	def onclick(self, event):
+		
+		print event.x,event.y
+
+		x = self.canvas.canvasy(event.x)-3
+		y = self.canvas.canvasy(event.y)-3
+
+		print x,y
+		if x<0 or y<0:
+			return
+
+		frontcolor = self.parent.getfrontcolor()
+
+		self.canvas.itemconfig(self.canvas.find_closest(x,y), fill=color_names[frontcolor])
+
+		#!!!!! y in rows and x in columns
+		row = int(y)/self.codel_size
+		if row == self.program.height:
+			row=row-1
+		column = int(x)/self.codel_size
+		if column == self.program.width:
+			column=column-1
+		self.program.set_codel(row,column,frontcolor)
+
+		print row,column
 
 
 def main():
