@@ -2,7 +2,7 @@ import sys
 import os
 from PIL import Image, ImageDraw
 
-# from interpreter import Program
+from interpreter import Program
 try:
 	execfile("D:\Antoine\Programmation\piet-py-editor\interpreter.py")
 except Exception:
@@ -38,51 +38,93 @@ color_names = {'lred' : 'light coral',
 		'lblue': 'cornflower blue',
 		'blue' : 'blue',
 		'dblue': 'navy',
-		'lmagenta': 'hot pink',
+		'lmagenta': 'orchid',
 		'magenta' : 'magenta',
 		'dmagenta': 'magenta4',
 		'white':'white',
 		'black':'black'}
 
-color_rgbs = {'lred' : (240,128,128),
+#color_rgbs = {'lred' : (240,128,128),
+		#'red'  : (255,0,0),
+		#'dred' : (139,0,0),
+		#'lyellow': (238,221,130),
+		#'yellow' : (255,215,0),
+		#'dyellow': (218,165,32),
+		#'lgreen': (152,251,152),
+		#'green' : (0,238,0),
+		#'dgreen': (0,100,0),
+		#'lcyan': (175,238,238),
+		#'cyan' : (0,255,255),
+		#'dcyan': (0,134,139),
+		#'lblue': (100,149,237),
+		#'blue' : (0,0,255),
+		#'dblue': (0,0,128),
+		#'lmagenta': (218,112,214),
+		#'magenta' : (255,0,255),
+		#'dmagenta': (139,0,139),
+		#'white':(255,255,255),
+		#'black':(0,0,0)}
+
+#rgb_colors = {(240,128,128):'lred',
+		#(255,0,0) : 'red',
+		#(139,0,0) : 'dred',
+		#(238,221,130) : 'lyellow',
+		#(255,215,0) : 'yellow',
+		#(218,165,32) : 'dyellow',
+		#(152,251,152) : 'lgreen',
+		#(0,238,0) : 'green' ,
+		#(0,100,0) : 'dgreen',
+		#(175,238,238) : 'lcyan',
+		#(0,255,255) : 'cyan',
+		#(0,134,139) : 'dcyan',
+		#(100,149,237) : 'lblue',
+		#(0,0,255) : 'blue',
+		#(0,0,128) : 'dblue',
+		#(255,105,180) : 'lmagenta',
+		#(255,0,255) : 'magenta',
+		#(139,0,139) : 'dmagenta',
+		#(255,255,255) : 'white',
+		#(0,0,0) : 'black'}
+		
+color_rgbs = {'lred' : (255,192,192),
 		'red'  : (255,0,0),
-		'dred' : (139,0,0),
-		'lyellow': (238,221,130),
-		'yellow' : (255,215,0),
-		'dyellow': (218,165,32),
-		'lgreen': (152,251,152),
-		'green' : (0,238,0),
-		'dgreen': (0,100,0),
-		'lcyan': (175,238,238),
+		'dred' : (192,0,0),
+		'lyellow': (255,255,192),
+		'yellow' : (255,255,0),
+		'dyellow': (192,192,0),
+		'lgreen': (192,255,192),
+		'green' : (0,255,0),
+		'dgreen': (0,192,0),
+		'lcyan': (192,255,255),
 		'cyan' : (0,255,255),
-		'dcyan': (0,134,139),
-		'lblue': (100,149,237),
+		'dcyan': (0,192,192),
+		'lblue': (192,192,255),
 		'blue' : (0,0,255),
-		'dblue': (0,0,128),
-		'lmagenta': (255,105,180),
+		'dblue': (0,0,192),
+		'lmagenta': (255,192,255),
 		'magenta' : (255,0,255),
-		'dmagenta': (139,0,139),
+		'dmagenta': (192,0,192),
 		'white':(255,255,255),
 		'black':(0,0,0)}
 
-rgb_colors = {(240,128,128):'lred',
+rgb_colors = {(255,192,192):'lred',
 		(255,0,0) : 'red',
-		(139,0,0) : 'dred',
-		(238,221,130) : 'lyellow',
-		(255,215,0) : 'yellow',
-		(218,165,32) : 'dyellow',
-		(152,251,152) : 'lgreen',
-		(0,238,0) : 'green' ,
-		(0,100,0) : 'dgreen',
-		(175,238,238) : 'lcyan',
+		(192,0,0) : 'dred',
+		(255,255,192) : 'lyellow',
+		(255,255,0) : 'yellow',
+		(192,192,0) : 'dyellow',
+		(192,255,192) : 'lgreen',
+		(0,255,0) : 'green' ,
+		(0,192,0) : 'dgreen',
+		(192,255,255) : 'lcyan',
 		(0,255,255) : 'cyan',
-		(0,134,139) : 'dcyan',
-		(100,149,237) : 'lblue',
+		(0,192,192) : 'dcyan',
+		(192,192,255) : 'lblue',
 		(0,0,255) : 'blue',
-		(0,0,128) : 'dblue',
-		(255,105,180) : 'lmagenta',
+		(0,0,192) : 'dblue',
+		(255,192,255) : 'lmagenta',
 		(255,0,255) : 'magenta',
-		(139,0,139) : 'dmagenta',
+		(192,0,192) : 'dmagenta',
 		(255,255,255) : 'white',
 		(0,0,0) : 'black'}
 
@@ -245,7 +287,7 @@ class CanvasFrame(Frame):
 
 		self.parent=parent
 		
-		self.codel_size=20
+		self.codel_size=10
 	
 		self.canvas = Canvas(self, relief=SUNKEN, borderwidth=1, background="grey", scrollregion=(0,0,500,500))
 		
@@ -314,6 +356,10 @@ class CanvasFrame(Frame):
 				return
 
 			image = Image.open(openfile)
+			#TODO: detect codel size : for each line and each row, take biggest divisor of min number of contiguous pixels
+
+			image = image.convert("RGB")
+
 			bbox= image.getbbox()
 			width = bbox[2]/self.codel_size
 			height = bbox[3]/self.codel_size
