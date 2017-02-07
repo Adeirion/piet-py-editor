@@ -226,6 +226,8 @@ class ColorFrame(Frame):
 		self.frontcolor="white"
 		self.backcolor="black"
 
+		self.tool="pen"	#pen, bucket, select
+
 		self.labels=[]
 
 		for c in range(6):
@@ -264,6 +266,13 @@ class ColorFrame(Frame):
 		self.frontcolorlabel = Label(self, background=color_names['white'], relief='raised')
 		self.frontcolorlabel.grid(row=15, column=1, rowspan=2, columnspan=5, sticky='NSEW', padx=10, pady=10)
 
+		self.penbutton = Button(self, text="pen", command = lambda: self.select_tool("pen") )
+		self.penbutton.grid(row=17, column=0, columnspan=2)
+		self.bucketbutton = Button(self, text="bucket", command = lambda: self.select_tool("bucket"))
+		self.bucketbutton.grid(row=17, column=2, columnspan=2)
+		self.selectbutton = Button(self, text="select", command = lambda: self.select_tool("select"))
+		self.selectbutton.grid(row=17, column=4, columnspan=2)
+
 	def newfrontcolor(self, color):
 		self.parent.frontcolor=color
 		self.frontcolorlabel.config(background=color_names[color])
@@ -271,7 +280,7 @@ class ColorFrame(Frame):
 		for r in range(6):
 			for c in range(3):
 				if color_matrix[r][c]==color:
-					print color
+#					print color
 					for l in range(18):
 						self.labels[(l+r*3+c-(3 if l%3>2-c else 0))%18].config(text=operation_matrix[l/3][l%3])
 					return
@@ -279,6 +288,10 @@ class ColorFrame(Frame):
 	def newbackcolor(self, color):
 		self.parent.backcolor=color
 		self.backcolorlabel.config(background=color_names[color])
+
+	def select_tool(self, tool):
+		print tool
+		
 		
 class CanvasFrame(Frame):
 
