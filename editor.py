@@ -1,5 +1,6 @@
 import sys
 import os
+import numpy as np
 from PIL import Image, ImageDraw
 
 from interpreter import Program
@@ -150,6 +151,8 @@ class PietEditorFrame(Frame):
 		self.frontcolor="white"
 		self.backcolor="black"
 
+		self.tool="pen"
+
 		self.initUI()
 		
 	def initUI(self):
@@ -266,12 +269,15 @@ class ColorFrame(Frame):
 		self.frontcolorlabel = Label(self, background=color_names['white'], relief='raised')
 		self.frontcolorlabel.grid(row=15, column=1, rowspan=2, columnspan=5, sticky='NSEW', padx=10, pady=10)
 
-		self.penbutton = Button(self, text="pen", command = lambda: self.select_tool("pen") )
-		self.penbutton.grid(row=17, column=0, columnspan=2)
-		self.bucketbutton = Button(self, text="bucket", command = lambda: self.select_tool("bucket"))
-		self.bucketbutton.grid(row=17, column=2, columnspan=2)
-		self.selectbutton = Button(self, text="select", command = lambda: self.select_tool("select"))
-		self.selectbutton.grid(row=17, column=4, columnspan=2)
+		self.penlabel = Label(self, text="pen", relief='sunken' )
+		self.penlabel.grid(row=17, column=0, columnspan=2)
+		self.penlabel.bind("<Button-1>", lambda event: self.select_tool("pen"))
+		self.bucketlabel = Label(self, text = "bucket", relief = 'raised')
+		self.bucketlabel.grid(row=17, column=2, columnspan=2)
+		self.bucketlabel.bind("<Button-1>", lambda event: self.select_tool("bucket"))
+		self.selectlabel = Label(self, text="select", relief = 'raised')
+		self.selectlabel.grid(row=17, column=4, columnspan=2)
+		self.selectlabel.bind("<Button-1>", lambda event: self.select_tool("select"))
 
 	def newfrontcolor(self, color):
 		self.parent.frontcolor=color
@@ -291,6 +297,20 @@ class ColorFrame(Frame):
 
 	def select_tool(self, tool):
 		print tool
+		if tool != self.parent.tool:
+			if tool=="pen":
+				self.penlabel.config(relief='sunken')
+			elif tool=="bucket":
+				self.bucketlabel.config(relief='sunken')
+			elif tool=="select":
+				self.selectlabel.config(relief='sunken')
+			if self.parent.tool=="pen":
+				self.penlabel.config(relief='raised')
+			elif self.parent.tool=="bucket":
+				self.bucketlabel.config(relief='raised')
+			elif self.parent.tool=="select":
+				self.selectlabel.config(relief='raised')
+			self.parent.tool=tool
 		
 		
 class CanvasFrame(Frame):
@@ -324,10 +344,11 @@ class CanvasFrame(Frame):
 		self.modified=True
 	
 		self.canvas.delete('all')
+		self.codelgrid = np.empty((height,width), dtype=int)
 		
 		for i in range(self.program.height):
 			for j in range(self.program.width):
-				self.canvas.create_rectangle(j*self.codel_size,i*self.codel_size, (j+1)*self.codel_size, (i+1)*self.codel_size, fill='white')
+				self.codelgrid[i,j] = self.canvas.create_rectangle(j*self.codel_size, i*self.codel_size, (j+1)*self.codel_size, (i+1)*self.codel_size, fill='white')
 
 		self.canvas.tag_bind('all', '<Button-1>', self.onclick)
 		self.canvas.tag_bind('all', '<Button-3>', self.onclick)
@@ -404,14 +425,6 @@ class CanvasFrame(Frame):
 		if x<0 or y<0:
 			return
 
-		if event.num==1:
-			color = self.parent.getfrontcolor()
-		else:
-			color = self.parent.getbackcolor()
-
-		self.canvas.itemconfig(self.canvas.find_closest(x,y), fill=color_names[color])
-		self.modified=True
-
 		#!!!!! y in rows and x in columns
 		row = int(y)/self.codel_size
 		if row == self.program.height:
@@ -419,8 +432,27 @@ class CanvasFrame(Frame):
 		column = int(x)/self.codel_size
 		if column == self.program.width:
 			column=column-1
-		self.program.set_codel(row,column,color)
 
+		if event.num==1:
+			color = self.parent.getfrontcolor()
+		else:
+			color = self.parent.getbackcolor()
+
+		if self.parent.tool == "pen":
+			self.canvas.itemconfig(self.codelgrid[row,column], fill=color_names[color])
+			self.modified=True
+			self.program.set_codel(row,column,color)
+		
+		elif self.parent.tool == "bucket":
+
+			block = self.program.get_colorblock(row,column)
+			for row,column in block:
+				x=column*self.codel_size
+				y=row*self.codel_size
+				self.canvas.itemconfig(self.codelgrid[row,column], fill=color_names[color])
+				self.program.set_codel(row,column,color)
+			self.modified=True
+	
 
 
 def main():
