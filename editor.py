@@ -190,7 +190,11 @@ class PietEditorFrame(Frame):
 
 		# create more pulldown menus
 		datamenu = Menu(menubar, tearoff=0)
-		datamenu.add_command(label="Cancel", command=self.hello)
+		datamenu.add_command(label="Cancel", command=self.canvasframe.cancel)
+		datamenu.add_command(label="Repeat", command=self.canvasframe.repeat)
+		datamenu.add_separator()
+		datamenu.add_command(label="Zoom in", command=self.canvasframe.zoomin)
+		datamenu.add_command(label="Zoom out", command=self.canvasframe.zoomout)
 		menubar.add_cascade(label="Edit", menu=datamenu)
 
 		helpmenu = Menu(menubar, tearoff=0)
@@ -321,8 +325,8 @@ class CanvasFrame(Frame):
 		self.parent=parent
 		
 		self.codel_size=10
-	
-		self.canvas = Canvas(self, relief=SUNKEN, borderwidth=1, background="grey", scrollregion=(0,0,500,500))
+
+		self.canvas = Canvas(self, relief=SUNKEN, borderwidth=1, background="grey")
 		
 		hbar=Scrollbar(self, orient=HORIZONTAL)
 		hbar.pack(side=BOTTOM,fill=X)
@@ -330,7 +334,7 @@ class CanvasFrame(Frame):
 		vbar=Scrollbar(self,orient=VERTICAL)
 		vbar.pack(side=RIGHT,fill=Y)
 		vbar.config(command=self.canvas.yview)
-		self.canvas.config(width=300,height=300)
+		#self.canvas.config(width=500,height=500)
 		self.canvas.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
 		self.canvas.pack(side=LEFT, fill=BOTH, expand=1)
 
@@ -342,8 +346,11 @@ class CanvasFrame(Frame):
 		self.openfile = ""
 		self.cwd=os.getcwd()
 		self.modified=True
+		self.history=[]
+		self.history_index=0
 	
 		self.canvas.delete('all')
+		self.canvas.config(scrollregion=(0,0,width*self.codel_size,height*self.codel_size))
 		self.codelgrid = np.empty((height,width), dtype=int)
 		
 		for i in range(self.program.height):
@@ -352,6 +359,7 @@ class CanvasFrame(Frame):
 
 		self.canvas.tag_bind('all', '<Button-1>', self.onclick)
 		self.canvas.tag_bind('all', '<Button-3>', self.onclick)
+
 		
 	def onsave(self):
 		self.save(self.openfile)
@@ -439,20 +447,69 @@ class CanvasFrame(Frame):
 			color = self.parent.getbackcolor()
 
 		if self.parent.tool == "pen":
-			self.canvas.itemconfig(self.codelgrid[row,column], fill=color_names[color])
 			self.modified=True
-			self.program.set_codel(row,column,color)
+			del self.history[self.history_index:]
+			self.history_index = self.history_index+1
+			self.history.append(((row,column), color, self.program.get_codel(row,column)))
+			self.paint((row,column),color)
 		
 		elif self.parent.tool == "bucket":
 
 			block = self.program.get_colorblock(row,column)
-			for row,column in block:
-				x=column*self.codel_size
-				y=row*self.codel_size
-				self.canvas.itemconfig(self.codelgrid[row,column], fill=color_names[color])
-				self.program.set_codel(row,column,color)
+
 			self.modified=True
-	
+			del self.history[self.history_index:]
+			self.history_index = self.history_index+1
+			self.history.append((block, color, self.program.get_codel(row,column)))
+			self.paint(block, color)
+
+		elif self.parent.tool == "select":
+			pass
+
+
+	def cancel(self):
+		if self.history_index == 0:
+			return
+		self.history_index = self.history_index-1
+		block, new_color, old_color = self.history[self.history_index]
+		self.paint(block, old_color)
+
+	def repeat(self):
+		if self.history_index == len(self.history):
+			return
+		block, new_color, old_color = self.history[self.history_index]
+		self.history_index = self.history_index+1
+		self.paint(block, new_color)
+
+	def paint(self, codels, new_color):
+		
+		if type(codels[0]) == int:
+			codels=[codels]
+
+		if type(new_color) == str:
+			new_color = [new_color]*len(codels)
+
+		for (row,column),color in zip(codels, new_color):
+			self.canvas.itemconfig(self.codelgrid[row,column], fill=color_names[color])
+			self.program.set_codel(row,column,color)
+
+	def zoomin(self):
+		if self.codel_size >= 80:
+			self.resize(80)
+			return
+		self.resize(int(self.codel_size*2))
+
+	def zoomout(self):
+		if self.codel_size <=5:
+			self.resize(5)
+			return
+		self.resize(int(self.codel_size/2))
+
+	def resize(self, new_codel_size):
+		scale = float(new_codel_size)/self.codel_size
+		self.canvas.config(scrollregion=(0, 0, self.program.width*new_codel_size,self.program.height*new_codel_size))
+		self.canvas.scale('all', 0, 0, scale, scale)
+		self.codel_size = new_codel_size
 
 
 def main():
