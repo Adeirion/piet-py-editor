@@ -324,6 +324,7 @@ class CanvasFrame(Frame):
 
 		self.parent=parent
 		
+		#in pixels
 		self.codel_size=10
 
 		self.canvas = Canvas(self, relief=SUNKEN, borderwidth=1, background="grey")
@@ -352,6 +353,7 @@ class CanvasFrame(Frame):
 		self.canvas.delete('all')
 		self.canvas.config(scrollregion=(0,0,width*self.codel_size,height*self.codel_size))
 		self.codelgrid = np.empty((height,width), dtype=int)
+		self.selection = None
 		
 		for i in range(self.program.height):
 			for j in range(self.program.width):
@@ -359,6 +361,10 @@ class CanvasFrame(Frame):
 
 		self.canvas.tag_bind('all', '<Button-1>', self.onclick)
 		self.canvas.tag_bind('all', '<Button-3>', self.onclick)
+		self.canvas.tag_bind('all', '<B1-Motion>', self.onmove)
+		self.canvas.tag_bind('all', '<B3-Motion>', self.onmove)
+		self.canvas.tag_bind('all', '<ButtonRelease-1>', self.onrelease)
+		self.canvas.tag_bind('all', '<ButtonRelease-3>', self.onrelease)
 
 		
 	def onsave(self):
@@ -446,11 +452,16 @@ class CanvasFrame(Frame):
 		else:
 			color = self.parent.getbackcolor()
 
+		self.init_row = row
+		self.init_column = column
+		self.current_row = row
+		self.current_column = column
+
 		if self.parent.tool == "pen":
 			self.modified=True
 			del self.history[self.history_index:]
 			self.history_index = self.history_index+1
-			self.history.append(((row,column), color, self.program.get_codel(row,column)))
+			self.history.append(([(row,column)], color, [self.program.get_codel(row,column)]))
 			self.paint((row,column),color)
 		
 		elif self.parent.tool == "bucket":
@@ -460,13 +471,84 @@ class CanvasFrame(Frame):
 			self.modified=True
 			del self.history[self.history_index:]
 			self.history_index = self.history_index+1
-			self.history.append((block, color, self.program.get_codel(row,column)))
+			self.history.append((block, color, [self.program.get_codel(row,column)]))
 			self.paint(block, color)
 
 		elif self.parent.tool == "select":
-			pass
+			self.canvas.delete("selection")
+			self.selection=[]
+
+			#self.canvas.create_rectangle(column*self.codel_size, row*self.codel_size, (column+1)*self.codel_size, (row+1)*self.codel_size, fill = "", outline="red", dash = (4,4), width=2, tags="selection")
+			
+			
+
+	def onmove(self, event):
+		x = self.canvas.canvasy(event.x)-3
+		y = self.canvas.canvasy(event.y)-3
+
+		if x<0 or y<0:
+			return
+
+		#!!!!! y in rows and x in columns
+		row = int(y)/self.codel_size
+		if row == self.program.height:
+			row=row-1
+		column = int(x)/self.codel_size
+		if column == self.program.width:
+			column=column-1
+		
+		if self.current_row == row and self.current_column == column:
+			return
+		
+		self.current_row = row
+		self.current_column = column
+
+		if self.parent.tool == "pen":
+
+			block, newcolor, oldcolors = self.history[self.history_index-1]
+			if (row,column) not in block:
+				block.append((row,column))
+				oldcolors.append(self.program.get_codel(row,column))
+				self.paint((row,column), newcolor)
+			
+
+		elif self.parent.tool == "select":
+		
+			row0,row1 = np.sort([row,self.init_row])
+			column0,column1 = np.sort([column,self.init_column])
+
+			self.canvas.delete("selection")
+			self.canvas.create_rectangle(column0*self.codel_size, row0*self.codel_size, (column1+1)*self.codel_size, (row1+1)*self.codel_size, fill = "", outline="red", dash = (4,4), width=2, tags="selection")
 
 
+	def onrelease(self, event):
+		x = self.canvas.canvasy(event.x)-3
+		y = self.canvas.canvasy(event.y)-3
+
+		if x<0 or y<0:
+			return
+
+		#!!!!! y in rows and x in columns
+		row = int(y)/self.codel_size
+		if row == self.program.height:
+			row=row-1
+		column = int(x)/self.codel_size
+		if column == self.program.width:
+			column=column-1
+
+		if self.parent.tool == "select":
+		
+			if len(self.canvas.find_withtag("selection")) > 0:
+				coords = self.canvas.coords("selection")
+				self.selection = map(lambda i: int(i/self.codel_size), [coords[i] for i in [1,0,3,2]])
+
+		del self.init_row
+		del self.init_column
+
+		del self.current_row
+		del self.current_column
+
+	
 	def cancel(self):
 		if self.history_index == 0:
 			return
@@ -487,7 +569,10 @@ class CanvasFrame(Frame):
 			codels=[codels]
 
 		if type(new_color) == str:
-			new_color = [new_color]*len(codels)
+			new_color = [new_color]
+		
+		if len(new_color) == 1:
+			new_color = new_color*len(codels)
 
 		for (row,column),color in zip(codels, new_color):
 			self.canvas.itemconfig(self.codelgrid[row,column], fill=color_names[color])
@@ -504,6 +589,9 @@ class CanvasFrame(Frame):
 			self.resize(5)
 			return
 		self.resize(int(self.codel_size/2))
+
+	def copy(self):
+		pass
 
 	def resize(self, new_codel_size):
 		scale = float(new_codel_size)/self.codel_size
