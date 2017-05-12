@@ -161,6 +161,9 @@ class PietEditorFrame(Frame):
 
 		self.pack(fill=BOTH, expand=1)
 
+		self.toolbar = ToolBarFrame(self)
+		self.toolbar.pack(side=TOP, fill=X, expand=False)
+
 		self.colorselector = ColorFrame(self)
 		self.colorselector.pack(side=LEFT, fill=Y, expand=False, padx = 5, pady = 5)
 		
@@ -193,6 +196,9 @@ class PietEditorFrame(Frame):
 		datamenu.add_command(label="Cancel", command=self.canvasframe.cancel)
 		datamenu.add_command(label="Repeat", command=self.canvasframe.repeat)
 		datamenu.add_separator()
+		datamenu.add_command(label="Copy", command=self.canvasframe.copy)
+		datamenu.add_command(label="Paste", command=self.canvasframe.paste)
+		datamenu.add_separator()
 		datamenu.add_command(label="Zoom in", command=self.canvasframe.zoomin)
 		datamenu.add_command(label="Zoom out", command=self.canvasframe.zoomout)
 		menubar.add_cascade(label="Edit", menu=datamenu)
@@ -220,6 +226,43 @@ class PietEditorFrame(Frame):
 	def hello(self):
 		print("hello")
 
+	def settool(self,tool):
+		self.tool = tool
+
+class ToolBarFrame(Frame):
+	
+	def __init__(self, parent):
+		Frame.__init__(self, parent, relief=RAISED, borderwidth=1)
+
+		self.parent = parent
+
+		self.penlabel = Label(self, text="pen", relief='sunken' )
+		self.penlabel.pack(side=LEFT, fill=None, expand=False)
+		self.penlabel.bind("<Button-1>", lambda event: self.select_tool("pen"))
+		self.bucketlabel = Label(self, text = "bucket", relief = 'raised')
+		self.bucketlabel.pack(side=LEFT, fill=None, expand=False)
+		self.bucketlabel.bind("<Button-1>", lambda event: self.select_tool("bucket"))
+		self.selectlabel = Label(self, text="select", relief = 'raised')
+		self.selectlabel.pack(side=LEFT, fill=None, expand=False)
+		self.selectlabel.bind("<Button-1>", lambda event: self.select_tool("select"))
+
+	def select_tool(self, tool):
+		#print tool
+		if tool != self.parent.tool:
+			if tool=="pen":
+				self.penlabel.config(relief='sunken')
+			elif tool=="bucket":
+				self.bucketlabel.config(relief='sunken')
+			elif tool=="select":
+				self.selectlabel.config(relief='sunken')
+			if self.parent.tool=="pen":
+				self.penlabel.config(relief='raised')
+			elif self.parent.tool=="bucket":
+				self.bucketlabel.config(relief='raised')
+			elif self.parent.tool=="select":
+				self.selectlabel.config(relief='raised')
+			self.parent.tool=tool
+		
 class ColorFrame(Frame):
 	
 	def __init__(self, parent):
@@ -232,8 +275,6 @@ class ColorFrame(Frame):
 
 		self.frontcolor="white"
 		self.backcolor="black"
-
-		self.tool="pen"	#pen, bucket, select
 
 		self.labels=[]
 
@@ -273,16 +314,6 @@ class ColorFrame(Frame):
 		self.frontcolorlabel = Label(self, background=color_names['white'], relief='raised')
 		self.frontcolorlabel.grid(row=15, column=1, rowspan=2, columnspan=5, sticky='NSEW', padx=10, pady=10)
 
-		self.penlabel = Label(self, text="pen", relief='sunken' )
-		self.penlabel.grid(row=17, column=0, columnspan=2)
-		self.penlabel.bind("<Button-1>", lambda event: self.select_tool("pen"))
-		self.bucketlabel = Label(self, text = "bucket", relief = 'raised')
-		self.bucketlabel.grid(row=17, column=2, columnspan=2)
-		self.bucketlabel.bind("<Button-1>", lambda event: self.select_tool("bucket"))
-		self.selectlabel = Label(self, text="select", relief = 'raised')
-		self.selectlabel.grid(row=17, column=4, columnspan=2)
-		self.selectlabel.bind("<Button-1>", lambda event: self.select_tool("select"))
-
 	def newfrontcolor(self, color):
 		self.parent.frontcolor=color
 		self.frontcolorlabel.config(background=color_names[color])
@@ -290,7 +321,6 @@ class ColorFrame(Frame):
 		for r in range(6):
 			for c in range(3):
 				if color_matrix[r][c]==color:
-#					print color
 					for l in range(18):
 						self.labels[(l+r*3+c-(3 if l%3>2-c else 0))%18].config(text=operation_matrix[l/3][l%3])
 					return
@@ -299,23 +329,6 @@ class ColorFrame(Frame):
 		self.parent.backcolor=color
 		self.backcolorlabel.config(background=color_names[color])
 
-	def select_tool(self, tool):
-		print tool
-		if tool != self.parent.tool:
-			if tool=="pen":
-				self.penlabel.config(relief='sunken')
-			elif tool=="bucket":
-				self.bucketlabel.config(relief='sunken')
-			elif tool=="select":
-				self.selectlabel.config(relief='sunken')
-			if self.parent.tool=="pen":
-				self.penlabel.config(relief='raised')
-			elif self.parent.tool=="bucket":
-				self.bucketlabel.config(relief='raised')
-			elif self.parent.tool=="select":
-				self.selectlabel.config(relief='raised')
-			self.parent.tool=tool
-		
 		
 class CanvasFrame(Frame):
 
@@ -340,6 +353,8 @@ class CanvasFrame(Frame):
 		self.canvas.pack(side=LEFT, fill=BOTH, expand=1)
 
 		self.new_program(30,30)
+
+		self.canvas.bind("<Control-C>", self.copy)
 		
 	def new_program(self,height,width):
 		
@@ -382,11 +397,11 @@ class CanvasFrame(Frame):
 			if savefile=="":
 				return
 		
-		image = Image.new("RGB", (self.program.width*self.codel_size,self.program.height*self.codel_size), (255,255,255))
+		image = Image.new("RGB", (self.program.width*self.codel_size, self.program.height*self.codel_size), (255,255,255))
 		draw = ImageDraw.Draw(image)
 		for i in range(self.program.height):
 			for j in range(self.program.width):
-				draw.rectangle((j*self.codel_size,i*self.codel_size,(j+1)*self.codel_size,(i+1)*self.codel_size), fill = color_rgbs[self.program.get_codel(i,j)])
+				draw.rectangle((j*self.codel_size, i*self.codel_size, (j+1)*self.codel_size, (i+1)*self.codel_size), fill = color_rgbs[self.program.get_codel(i,j)])
 		image.save(savefile)
 		
 		self.cwd = os.path.dirname(savefile)
@@ -478,7 +493,7 @@ class CanvasFrame(Frame):
 			self.canvas.delete("selection")
 			self.selection=[]
 
-			#self.canvas.create_rectangle(column*self.codel_size, row*self.codel_size, (column+1)*self.codel_size, (row+1)*self.codel_size, fill = "", outline="red", dash = (4,4), width=2, tags="selection")
+			self.canvas.create_rectangle(column*self.codel_size, row*self.codel_size, (column+1)*self.codel_size, (row+1)*self.codel_size, fill = "", outline="red", dash = (4,4), width=2, tags="selection")
 			
 			
 
@@ -486,8 +501,8 @@ class CanvasFrame(Frame):
 		x = self.canvas.canvasy(event.x)-3
 		y = self.canvas.canvasy(event.y)-3
 
-		if x<0 or y<0:
-			return
+		#if x<0 or y<0:
+		#	return
 
 		#!!!!! y in rows and x in columns
 		row = int(y)/self.codel_size
@@ -497,8 +512,12 @@ class CanvasFrame(Frame):
 		if column == self.program.width:
 			column=column-1
 		
+		if row<0 or column<0 or row>self.program.height or column>self.program.width:
+			return
+
 		if self.current_row == row and self.current_column == column:
 			return
+
 		
 		self.current_row = row
 		self.current_column = column
@@ -547,6 +566,7 @@ class CanvasFrame(Frame):
 
 		del self.current_row
 		del self.current_column
+		
 
 	
 	def cancel(self):
@@ -591,7 +611,14 @@ class CanvasFrame(Frame):
 		self.resize(int(self.codel_size/2))
 
 	def copy(self):
-		pass
+		if self.selection is not None:
+			self.clipboard=[[self.program.get_codel(r,c) for c in range(self.selection[1], self.selection[3])] for r in range(self.selection[0], self.selection[2])]
+		print self.clipboard
+		
+#		self.clipboard = 
+
+	def paste(self):
+		print "paste"
 
 	def resize(self, new_codel_size):
 		scale = float(new_codel_size)/self.codel_size
