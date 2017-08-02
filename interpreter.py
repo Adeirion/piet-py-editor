@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+from os import path
 from PIL import Image, ImageDraw
 
 code_colors = {0:'white', 1: 'black',
@@ -24,6 +25,27 @@ code_ops = {0:'noop', 1:'push', 2:'pop',
 				30:'greater', 31:'pointer', 32:'switch',
 				40:'duplicate', 41:'roll', 42:'in(int)',
 				50:'in(char)', 51:'out(int)', 52:'out(char)'}
+
+rgb_colors = {(255,192,192):'lred',
+		(255,0,0) : 'red',
+		(192,0,0) : 'dred',
+		(255,255,192) : 'lyellow',
+		(255,255,0) : 'yellow',
+		(192,192,0) : 'dyellow',
+		(192,255,192) : 'lgreen',
+		(0,255,0) : 'green' ,
+		(0,192,0) : 'dgreen',
+		(192,255,255) : 'lcyan',
+		(0,255,255) : 'cyan',
+		(0,192,192) : 'dcyan',
+		(192,192,255) : 'lblue',
+		(0,0,255) : 'blue',
+		(0,0,192) : 'dblue',
+		(255,192,255) : 'lmagenta',
+		(255,0,255) : 'magenta',
+		(192,0,192) : 'dmagenta',
+		(255,255,255) : 'white',
+		(0,0,0) : 'black'}
 
 class Program():
 
@@ -138,7 +160,7 @@ class Interpreter():
 	def _get_next(self):
 		
 		if self.it == 8:
-			return (-1,-1),""
+			return -1,-1,""
 		
 		block = self.program.get_colorblock(self.row, self.column)
 		
@@ -166,9 +188,9 @@ class Interpreter():
 		elif self.dp == 3:
 			x = np.min([codel[0] for codel in block])
 			if self.cc == 0:
-				y = np.max([codel[1] for codel in block if codel[0]==x])
-			else:
 				y = np.min([codel[1] for codel in block if codel[0]==x])
+			else:
+				y = np.max([codel[1] for codel in block if codel[0]==x])
 			x = x-1
 			
 		white=False
@@ -321,5 +343,5 @@ if __name__ == '__main__':
 
 	
 #debug
-p = load("D:\Antoine\Programmation\piet-py-editor\date4.png")
+p = load(path.join("..","date4_2.png"))
 inter = Interpreter(p)
